@@ -13,17 +13,11 @@ async function sendStoreLocation(ctx) {
     await ctx.sendLocation(config_1.config.store.latitude, config_1.config.store.longitude);
 }
 /**
- * Sends the formatted store info message (name, phone, map links).
+ * Sends the formatted store info message (name, phone).
  */
 async function sendStoreInfo(ctx) {
-    const { name, phone, yandexMapsUrl } = config_1.config.store;
-    const message = [
-        `📍 ${name}`,
-        `📞 ${phone}`,
-        '',
-        'Yandex Maps:',
-        yandexMapsUrl,
-    ].join('\n');
+    const { name, phone } = config_1.config.store;
+    const message = [`📍 ${name}`, `📞 ${phone}`].join('\n');
     await ctx.reply(message);
 }
 /**

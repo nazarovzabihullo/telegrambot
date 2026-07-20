@@ -58,7 +58,6 @@ function buildConfig() {
             phone: requireEnv('STORE_PHONE'),
             latitude: requireFloatEnv('STORE_LATITUDE'),
             longitude: requireFloatEnv('STORE_LONGITUDE'),
-            yandexMapsUrl: requireEnv('YANDEX_MAPS_URL'),
         },
         bitrixClientId: requireEnv('BITRIX_CLIENT_ID'),
         bitrixClientSecret: requireEnv('BITRIX_CLIENT_SECRET'),

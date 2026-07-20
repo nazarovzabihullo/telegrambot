@@ -10,18 +10,12 @@ export async function sendStoreLocation(ctx: Context): Promise<void> {
 }
 
 /**
- * Sends the formatted store info message (name, phone, map links).
+ * Sends the formatted store info message (name, phone).
  */
 export async function sendStoreInfo(ctx: Context): Promise<void> {
-  const { name, phone, yandexMapsUrl } = config.store;
+  const { name, phone } = config.store;
 
-  const message = [
-    `📍 ${name}`,
-    `📞 ${phone}`,
-    '',
-    'Yandex Maps:',
-    yandexMapsUrl,
-  ].join('\n');
+  const message = [`📍 ${name}`, `📞 ${phone}`].join('\n');
 
   await ctx.reply(message);
 }

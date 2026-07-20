@@ -18,7 +18,6 @@ export interface AppConfig {
     phone: string;
     latitude: number;
     longitude: number;
-    yandexMapsUrl: string;
   };
   bitrixClientId: string;
   bitrixClientSecret: string;
@@ -88,7 +87,6 @@ function buildConfig(): AppConfig {
       phone: requireEnv('STORE_PHONE'),
       latitude: requireFloatEnv('STORE_LATITUDE'),
       longitude: requireFloatEnv('STORE_LONGITUDE'),
-      yandexMapsUrl: requireEnv('YANDEX_MAPS_URL'),
     },
     bitrixClientId: requireEnv('BITRIX_CLIENT_ID'),
     bitrixClientSecret: requireEnv('BITRIX_CLIENT_SECRET'),

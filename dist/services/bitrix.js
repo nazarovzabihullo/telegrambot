@@ -1,8 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.senderFromCtx = senderFromCtx;
 exports.forwardMessageToBitrix = forwardMessageToBitrix;
 const config_1 = require("../config");
 const bitrixConnector_1 = require("./bitrixConnector");
+/** Builds a TelegramSender from a Telegraf context, or null if it has no `from` (shouldn't normally happen). */
+function senderFromCtx(ctx) {
+    const from = ctx.from;
+    if (!from) {
+        return null;
+    }
+    return {
+        telegramId: from.id,
+        firstName: from.first_name,
+        lastName: from.last_name,
+        username: from.username,
+    };
+}
 /**
  * Forwards one plain-text Telegram message into the Bitrix24 Open Lines chat
  * for that user, via our registered imconnector. Must never throw: a Bitrix

@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveInstall = saveInstall;
 exports.clearInstall = clearInstall;
-exports.getValidTokens = getValidTokens;
 exports.callBitrixMethod = callBitrixMethod;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -82,47 +81,40 @@ async function refresh(tokens) {
     writeToDisk(refreshed);
     return refreshed;
 }
-/** Returns a currently-valid access token + REST server endpoint, refreshing if needed. */
-async function getValidTokens() {
+/** Returns a currently-valid access token, refreshing it first if needed. */
+async function getValidAccessToken() {
     let tokens = loadTokens();
     if (Date.now() >= tokens.expiresAt) {
         tokens = await refresh(tokens);
     }
-    return { serverEndpoint: tokens.serverEndpoint, accessToken: tokens.accessToken };
+    return tokens.accessToken;
 }
 /**
  * Calls a Bitrix24 REST method authenticated as the installed local application,
  * refreshing the access token and retrying once if Bitrix reports it as expired.
+ *
+ * Calls go straight to the classic portal domain rather than SERVER_ENDPOINT:
+ * every REST namespace this app actually uses (imconnector.*, imopenlines.*,
+ * event.bind) fails on that gateway on this portal, so trying it first would
+ * just double every request for no benefit.
  */
 async function callBitrixMethod(method, params) {
-    const { serverEndpoint, accessToken } = await getValidTokens();
+    const accessToken = await getValidAccessToken();
+    const url = `https://${config_1.config.bitrixPortalDomain}/rest/${method}.json`;
     // Bitrix returns error details as a JSON body even on non-2xx status codes
-    // (e.g. 404 for an unknown method, 401 for a bad token). Accepting any
-    // status here means response.data is always populated, so the error
-    // handling below can surface Bitrix's actual error code/description
-    // instead of axios's generic "Request failed with status code N".
-    const post = (url, token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000, validateStatus: () => true });
-    const gatewayUrl = `${serverEndpoint}${method}.json`;
-    let response = await post(gatewayUrl, accessToken);
+    // (e.g. 401 for a bad/expired token). Accepting any status here means
+    // response.data is always populated, so the error handling below can
+    // surface Bitrix's actual error code/description instead of axios's
+    // generic "Request failed with status code N".
+    const post = (token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000, validateStatus: () => true });
+    let response = await post(accessToken);
     if (response.data?.error === 'expired_token') {
         const tokens = loadTokens();
         const refreshed = await refresh(tokens);
-        response = await post(gatewayUrl, refreshed.accessToken);
-    }
-    // The SERVER_ENDPOINT gateway doesn't reliably proxy every REST namespace
-    // yet — observed both ERROR_METHOD_NOT_FOUND (imconnector.register,
-    // imopenlines.config.list, imconnector.activate) and WRONG_AUTH_TYPE
-    // (event.bind) for methods that work fine directly against the portal
-    // domain with the same token. Rather than chase each new error code
-    // one-by-one, fall back to the domain on any gateway error.
-    if (response.data?.error) {
-        const domainUrl = `https://${config_1.config.bitrixPortalDomain}/rest/${method}.json`;
-        console.warn(`[bitrix] ${method} failed on gateway (${response.data.error}), retrying via ${domainUrl}`);
-        response = await post(domainUrl, accessToken);
+        response = await post(refreshed.accessToken);
     }
     if (response.data?.error) {
         throw new Error(`[bitrix] ${method} failed (HTTP ${response.status}): ${response.data.error} - ${response.data.error_description ?? ''}`);
     }
-    console.log(`[bitrix] ${method} succeeded, response:`, JSON.stringify(response.data));
     return response.data.result;
 }

@@ -7,18 +7,9 @@ import { handleStart } from './handlers/start';
 import { handleLocation } from './handlers/location';
 import { handleOperator } from './handlers/operator';
 import { handleBack } from './handlers/back';
-import { forwardMessageToBitrix } from './services/bitrix';
-import type { TelegramSender } from './services/bitrix';
+import { forwardMessageToBitrix, senderFromCtx } from './services/bitrix';
 
 export const bot = new Telegraf<Context>(config.botToken);
-
-// Temporary diagnostic: logs every incoming update so we can see exactly
-// which handler ends up processing it (e.g. /start vs the Bitrix fallback).
-bot.use((ctx, next) => {
-  const text = ctx.message && 'text' in ctx.message ? ctx.message.text : undefined;
-  console.log('[bot] incoming update:', ctx.updateType, JSON.stringify(text));
-  return next();
-});
 
 // ---- Menu commands -------------------------------------------------------
 bot.start(handleStart);
@@ -36,19 +27,10 @@ bot.hears(BACK_BUTTON_TEXT, handleBack);
 // all menu button presses (Operator, Manzil, Orqaga) never reach Bitrix
 // as ordinary chat messages.
 bot.on(message('text'), async (ctx) => {
-  const from = ctx.from;
-  if (!from) {
+  const sender = senderFromCtx(ctx);
+  if (!sender) {
     return;
   }
-
-  console.log('[bot] forwarding to Bitrix (fallback matched):', JSON.stringify(ctx.message.text));
-
-  const sender: TelegramSender = {
-    telegramId: from.id,
-    firstName: from.first_name,
-    lastName: from.last_name,
-    username: from.username,
-  };
 
   await forwardMessageToBitrix(sender, ctx.message.text, ctx.message.message_id);
 });

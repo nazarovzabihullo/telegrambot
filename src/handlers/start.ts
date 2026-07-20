@@ -6,6 +6,5 @@ import { sendMainKeyboard } from '../services/telegram';
  * single-button persistent reply keyboard.
  */
 export async function handleStart(ctx: Context): Promise<void> {
-  console.log('[bot] /start handled');
   await sendMainKeyboard(ctx, "Assalomu alaykum! Quyidagi tugmadan foydalaning \u{1F447}");
 }
