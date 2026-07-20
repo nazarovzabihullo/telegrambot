@@ -11,6 +11,13 @@ const operator_1 = require("./handlers/operator");
 const back_1 = require("./handlers/back");
 const bitrix_1 = require("./services/bitrix");
 exports.bot = new telegraf_1.Telegraf(config_1.config.botToken);
+// Temporary diagnostic: logs every incoming update so we can see exactly
+// which handler ends up processing it (e.g. /start vs the Bitrix fallback).
+exports.bot.use((ctx, next) => {
+    const text = ctx.message && 'text' in ctx.message ? ctx.message.text : undefined;
+    console.log('[bot] incoming update:', ctx.updateType, JSON.stringify(text));
+    return next();
+});
 // ---- Menu commands -------------------------------------------------------
 exports.bot.start(start_1.handleStart);
 exports.bot.command('menu', start_1.handleStart);
@@ -29,6 +36,7 @@ exports.bot.on((0, filters_1.message)('text'), async (ctx) => {
     if (!from) {
         return;
     }
+    console.log('[bot] forwarding to Bitrix (fallback matched):', JSON.stringify(ctx.message.text));
     const sender = {
         telegramId: from.id,
         firstName: from.first_name,

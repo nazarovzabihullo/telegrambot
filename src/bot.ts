@@ -12,6 +12,14 @@ import type { TelegramSender } from './services/bitrix';
 
 export const bot = new Telegraf<Context>(config.botToken);
 
+// Temporary diagnostic: logs every incoming update so we can see exactly
+// which handler ends up processing it (e.g. /start vs the Bitrix fallback).
+bot.use((ctx, next) => {
+  const text = ctx.message && 'text' in ctx.message ? ctx.message.text : undefined;
+  console.log('[bot] incoming update:', ctx.updateType, JSON.stringify(text));
+  return next();
+});
+
 // ---- Menu commands -------------------------------------------------------
 bot.start(handleStart);
 bot.command('menu', handleStart);
@@ -32,6 +40,8 @@ bot.on(message('text'), async (ctx) => {
   if (!from) {
     return;
   }
+
+  console.log('[bot] forwarding to Bitrix (fallback matched):', JSON.stringify(ctx.message.text));
 
   const sender: TelegramSender = {
     telegramId: from.id,

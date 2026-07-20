@@ -7,5 +7,6 @@ const telegram_1 = require("../services/telegram");
  * single-button persistent reply keyboard.
  */
 async function handleStart(ctx) {
+    console.log('[bot] /start handled');
     await (0, telegram_1.sendMainKeyboard)(ctx, "Assalomu alaykum! Quyidagi tugmadan foydalaning \u{1F447}");
 }
