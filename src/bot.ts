@@ -40,7 +40,7 @@ bot.on(message('text'), async (ctx) => {
     username: from.username,
   };
 
-  await forwardMessageToBitrix(sender, ctx.message.text);
+  await forwardMessageToBitrix(sender, ctx.message.text, ctx.message.message_id);
 });
 
 // ---- Global error handler ---------------------------------------------

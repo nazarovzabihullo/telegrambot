@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
+const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 /**
@@ -29,6 +30,17 @@ function requireFloatEnv(name) {
     }
     return value;
 }
+/**
+ * Parses a required environment variable as an integer, throwing if invalid.
+ */
+function requireIntEnv(name) {
+    const raw = requireEnv(name);
+    const value = Number.parseInt(raw, 10);
+    if (Number.isNaN(value)) {
+        throw new Error(`Environment variable ${name} must be a valid integer, got "${raw}"`);
+    }
+    return value;
+}
 function buildConfig() {
     const botToken = requireEnv('BOT_TOKEN');
     const webhookUrl = requireEnv('WEBHOOK_URL').replace(/\/+$/, ''); // strip trailing slash
@@ -48,7 +60,12 @@ function buildConfig() {
             longitude: requireFloatEnv('STORE_LONGITUDE'),
             yandexMapsUrl: requireEnv('YANDEX_MAPS_URL'),
         },
-        bitrixWebhook: requireEnv('BITRIX_WEBHOOK').replace(/\/+$/, ''),
+        bitrixClientId: requireEnv('BITRIX_CLIENT_ID'),
+        bitrixClientSecret: requireEnv('BITRIX_CLIENT_SECRET'),
+        bitrixLineId: requireIntEnv('BITRIX_LINE_ID'),
+        bitrixInstallPath: '/bitrix/install',
+        bitrixEventsPath: '/bitrix/events',
+        tokenStorePath: path_1.default.join(process.cwd(), 'data', 'bitrix-tokens.json'),
     };
 }
 exports.config = buildConfig();

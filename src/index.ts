@@ -2,6 +2,8 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import { config } from './config';
 import { bot } from './bot';
+import { handleBitrixInstall } from './routes/bitrixInstall';
+import { handleBitrixEvent } from './routes/bitrixEvents';
 
 const app = express();
 
@@ -13,6 +15,13 @@ app.get('/', (_req: Request, res: Response) => {
 // Telegram webhook endpoint. Telegraf parses the raw request body itself,
 // so this must be mounted before any global JSON body-parser middleware.
 app.use(bot.webhookCallback(config.webhookPath));
+
+// Bitrix24 local-application install handshake and Open Lines connector
+// events. Each gets its own scoped urlencoded parser instead of a global
+// one, so it never interferes with Telegraf's raw-body webhook above.
+const bitrixBodyParser = express.urlencoded({ extended: true });
+app.post(config.bitrixInstallPath, bitrixBodyParser, handleBitrixInstall);
+app.post(config.bitrixEventsPath, bitrixBodyParser, handleBitrixEvent);
 
 /**
  * Registers the Telegram webhook so that Telegram starts delivering

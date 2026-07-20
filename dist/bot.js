@@ -35,7 +35,7 @@ exports.bot.on((0, filters_1.message)('text'), async (ctx) => {
         lastName: from.last_name,
         username: from.username,
     };
-    await (0, bitrix_1.forwardMessageToBitrix)(sender, ctx.message.text);
+    await (0, bitrix_1.forwardMessageToBitrix)(sender, ctx.message.text, ctx.message.message_id);
 });
 // ---- Global error handler ---------------------------------------------
 // Prevents an unexpected error in any handler from crashing the process.

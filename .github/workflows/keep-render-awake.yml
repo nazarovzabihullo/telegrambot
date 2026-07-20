@@ -1,0 +1,17 @@
+name: Keep Render awake (daytime only)
+
+# GitHub Actions cron always runs in UTC — there is no timezone setting.
+# Tashkent is UTC+5 (no DST), so 07:00-23:00 Tashkent = 02:00-18:00 UTC.
+# We stop the window at hour 17 (last ping ~22:50 Tashkent) to stay safely
+# inside "until 23:00" rather than overshoot into the night.
+on:
+  schedule:
+    - cron: '*/10 2-17 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint to keep the free Render instance awake
+        run: curl -fsS --max-time 20 "https://telegrambot-v6ld.onrender.com/"
