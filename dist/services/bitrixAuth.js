@@ -109,12 +109,15 @@ async function callBitrixMethod(method, params) {
         const refreshed = await refresh(tokens);
         response = await post(gatewayUrl, refreshed.accessToken);
     }
-    // The SERVER_ENDPOINT gateway doesn't proxy every REST namespace yet
-    // (observed for imconnector.* on this portal) — fall back to calling the
-    // classic portal-domain REST endpoint with the same access token.
-    if (response.data?.error === 'ERROR_METHOD_NOT_FOUND') {
+    // The SERVER_ENDPOINT gateway doesn't reliably proxy every REST namespace
+    // yet — observed both ERROR_METHOD_NOT_FOUND (imconnector.register,
+    // imopenlines.config.list, imconnector.activate) and WRONG_AUTH_TYPE
+    // (event.bind) for methods that work fine directly against the portal
+    // domain with the same token. Rather than chase each new error code
+    // one-by-one, fall back to the domain on any gateway error.
+    if (response.data?.error) {
         const domainUrl = `https://${config_1.config.bitrixPortalDomain}/rest/${method}.json`;
-        console.warn(`[bitrix] ${method} not found on gateway, retrying via ${domainUrl}`);
+        console.warn(`[bitrix] ${method} failed on gateway (${response.data.error}), retrying via ${domainUrl}`);
         response = await post(domainUrl, accessToken);
     }
     if (response.data?.error) {
