@@ -63,6 +63,7 @@ function buildConfig() {
         bitrixClientId: requireEnv('BITRIX_CLIENT_ID'),
         bitrixClientSecret: requireEnv('BITRIX_CLIENT_SECRET'),
         bitrixLineId: requireIntEnv('BITRIX_LINE_ID'),
+        bitrixPortalDomain: requireEnv('BITRIX_PORTAL_DOMAIN'),
         bitrixInstallPath: '/bitrix/install',
         bitrixEventsPath: '/bitrix/events',
         tokenStorePath: path_1.default.join(process.cwd(), 'data', 'bitrix-tokens.json'),

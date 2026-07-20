@@ -96,18 +96,26 @@ async function getValidTokens() {
  */
 async function callBitrixMethod(method, params) {
     const { serverEndpoint, accessToken } = await getValidTokens();
-    const url = `${serverEndpoint}${method}.json`;
     // Bitrix returns error details as a JSON body even on non-2xx status codes
     // (e.g. 404 for an unknown method, 401 for a bad token). Accepting any
     // status here means response.data is always populated, so the error
     // handling below can surface Bitrix's actual error code/description
     // instead of axios's generic "Request failed with status code N".
-    const post = (token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000, validateStatus: () => true });
-    let response = await post(accessToken);
+    const post = (url, token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000, validateStatus: () => true });
+    const gatewayUrl = `${serverEndpoint}${method}.json`;
+    let response = await post(gatewayUrl, accessToken);
     if (response.data?.error === 'expired_token') {
         const tokens = loadTokens();
         const refreshed = await refresh(tokens);
-        response = await post(refreshed.accessToken);
+        response = await post(gatewayUrl, refreshed.accessToken);
+    }
+    // The SERVER_ENDPOINT gateway doesn't proxy every REST namespace yet
+    // (observed for imconnector.* on this portal) — fall back to calling the
+    // classic portal-domain REST endpoint with the same access token.
+    if (response.data?.error === 'ERROR_METHOD_NOT_FOUND') {
+        const domainUrl = `https://${config_1.config.bitrixPortalDomain}/rest/${method}.json`;
+        console.warn(`[bitrix] ${method} not found on gateway, retrying via ${domainUrl}`);
+        response = await post(domainUrl, accessToken);
     }
     if (response.data?.error) {
         throw new Error(`[bitrix] ${method} failed (HTTP ${response.status}): ${response.data.error} - ${response.data.error_description ?? ''}`);

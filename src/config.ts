@@ -23,6 +23,9 @@ export interface AppConfig {
   bitrixClientId: string;
   bitrixClientSecret: string;
   bitrixLineId: number;
+  /** Classic portal hostname, e.g. "lider.bitrix24.uz" — fallback for REST
+   *  methods the SERVER_ENDPOINT gateway doesn't proxy yet. */
+  bitrixPortalDomain: string;
   bitrixInstallPath: string;
   bitrixEventsPath: string;
   tokenStorePath: string;
@@ -89,6 +92,7 @@ function buildConfig(): AppConfig {
     bitrixClientId: requireEnv('BITRIX_CLIENT_ID'),
     bitrixClientSecret: requireEnv('BITRIX_CLIENT_SECRET'),
     bitrixLineId: requireIntEnv('BITRIX_LINE_ID'),
+    bitrixPortalDomain: requireEnv('BITRIX_PORTAL_DOMAIN'),
     bitrixInstallPath: '/bitrix/install',
     bitrixEventsPath: '/bitrix/events',
     tokenStorePath: path.join(process.cwd(), 'data', 'bitrix-tokens.json'),
