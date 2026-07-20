@@ -3,9 +3,15 @@ import path from 'path';
 import axios from 'axios';
 import { config } from '../config';
 
-/** Persisted OAuth state for the installed Bitrix24 local application. */
+/**
+ * Persisted OAuth state for the installed Bitrix24 local application.
+ *
+ * This portal uses Bitrix's newer install flow: instead of a portal DOMAIN,
+ * it hands us a SERVER_ENDPOINT (e.g. https://oauth.bitrix24.tech/rest/) that
+ * all REST calls must go through, and a member_id identifying the portal.
+ */
 interface StoredTokens {
-  domain: string;
+  serverEndpoint: string;
   memberId: string;
   accessToken: string;
   refreshToken: string;
@@ -33,14 +39,14 @@ function writeToDisk(tokens: StoredTokens): void {
  * during the local-application install handshake.
  */
 export function saveInstall(params: {
-  domain: string;
+  serverEndpoint: string;
   memberId: string;
   accessToken: string;
   refreshToken: string;
   expiresInSeconds: number;
 }): void {
   const tokens: StoredTokens = {
-    domain: params.domain,
+    serverEndpoint: params.serverEndpoint,
     memberId: params.memberId,
     accessToken: params.accessToken,
     refreshToken: params.refreshToken,
@@ -74,7 +80,11 @@ function loadTokens(): StoredTokens {
 }
 
 async function refresh(tokens: StoredTokens): Promise<StoredTokens> {
-  const response = await axios.get(`https://${tokens.domain}/oauth/token/`, {
+  // The token endpoint lives on the same host as the REST server endpoint
+  // (e.g. https://oauth.bitrix24.tech/oauth/token/).
+  const oauthOrigin = new URL(tokens.serverEndpoint).origin;
+
+  const response = await axios.get(`${oauthOrigin}/oauth/token/`, {
     params: {
       grant_type: 'refresh_token',
       client_id: config.bitrixClientId,
@@ -88,12 +98,12 @@ async function refresh(tokens: StoredTokens): Promise<StoredTokens> {
     access_token: string;
     refresh_token: string;
     expires_in: number;
-    domain: string;
+    server_endpoint?: string;
     member_id: string;
   };
 
   const refreshed: StoredTokens = {
-    domain: data.domain ?? tokens.domain,
+    serverEndpoint: data.server_endpoint ?? tokens.serverEndpoint,
     memberId: data.member_id ?? tokens.memberId,
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -104,13 +114,13 @@ async function refresh(tokens: StoredTokens): Promise<StoredTokens> {
   return refreshed;
 }
 
-/** Returns a currently-valid access token + portal domain, refreshing if needed. */
-export async function getValidTokens(): Promise<{ domain: string; accessToken: string }> {
+/** Returns a currently-valid access token + REST server endpoint, refreshing if needed. */
+export async function getValidTokens(): Promise<{ serverEndpoint: string; accessToken: string }> {
   let tokens = loadTokens();
   if (Date.now() >= tokens.expiresAt) {
     tokens = await refresh(tokens);
   }
-  return { domain: tokens.domain, accessToken: tokens.accessToken };
+  return { serverEndpoint: tokens.serverEndpoint, accessToken: tokens.accessToken };
 }
 
 /**
@@ -121,8 +131,8 @@ export async function callBitrixMethod<T = unknown>(
   method: string,
   params: Record<string, unknown>
 ): Promise<T> {
-  const { domain, accessToken } = await getValidTokens();
-  const url = `https://${domain}/rest/${method}.json`;
+  const { serverEndpoint, accessToken } = await getValidTokens();
+  const url = `${serverEndpoint}${method}.json`;
 
   const post = (token: string) =>
     axios.post(url, { ...params, auth: token }, { timeout: 10_000 });

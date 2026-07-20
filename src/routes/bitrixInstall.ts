@@ -3,19 +3,41 @@ import { config } from '../config';
 import { saveInstall } from '../services/bitrixAuth';
 import { registerConnector, activateConnector, bindEvent, listOpenLines } from '../services/bitrixConnector';
 
+// Standard Bitrix24 JS SDK snippet: closes the install slider/iframe cleanly.
+// Harmless if the request wasn't actually opened inside a Bitrix iframe.
+const BX24_FINISH_SCRIPT = `
+<script src="//api.bitrix24.com/api/v1/"></script>
+<script>
+  if (window.BX24) {
+    BX24.init(function () { BX24.installFinish(); });
+  }
+</script>
+`;
+
+function htmlPage(message: string): string {
+  return `<html><body>${message}${BX24_FINISH_SCRIPT}</body></html>`;
+}
+
 /**
  * Handles the Bitrix24 local-application install POST: captures the OAuth
  * tokens Bitrix hands us, then registers + activates our Open Lines connector
  * and binds the event handler — all in one idempotent step, so re-running the
  * "Install" button in Bitrix is always safe.
+ *
+ * This portal uses Bitrix's newer install flow: it sends SERVER_ENDPOINT
+ * (a REST gateway URL, e.g. https://oauth.bitrix24.tech/rest/) instead of a
+ * classic DOMAIN field.
  */
 export async function handleBitrixInstall(req: Request, res: Response): Promise<void> {
-  const { DOMAIN, AUTH_ID, AUTH_EXPIRES, REFRESH_ID, member_id: memberId } = req.body as Record<
-    string,
-    string | undefined
-  >;
+  const {
+    SERVER_ENDPOINT: serverEndpoint,
+    AUTH_ID: authId,
+    AUTH_EXPIRES: authExpires,
+    REFRESH_ID: refreshId,
+    member_id: memberId,
+  } = req.body as Record<string, string | undefined>;
 
-  if (!DOMAIN || !AUTH_ID || !AUTH_EXPIRES || !REFRESH_ID || !memberId) {
+  if (!serverEndpoint || !authId || !authExpires || !refreshId || !memberId) {
     console.error(
       '[bitrix] Install handler received an incomplete payload. Content-Type:',
       req.headers['content-type'],
@@ -27,11 +49,11 @@ export async function handleBitrixInstall(req: Request, res: Response): Promise<
   }
 
   saveInstall({
-    domain: DOMAIN,
+    serverEndpoint,
     memberId,
-    accessToken: AUTH_ID,
-    refreshToken: REFRESH_ID,
-    expiresInSeconds: Number.parseInt(AUTH_EXPIRES, 10),
+    accessToken: authId,
+    refreshToken: refreshId,
+    expiresInSeconds: Number.parseInt(authExpires, 10),
   });
 
   try {
@@ -53,9 +75,9 @@ export async function handleBitrixInstall(req: Request, res: Response): Promise<
     console.log(`[bitrix] Events bound to ${eventsUrl}`);
   } catch (error) {
     console.error('[bitrix] Install setup failed:', error instanceof Error ? error.message : error);
-    res.status(200).send('<html><body>App installed, but connector setup failed — check server logs.</body></html>');
+    res.status(200).send(htmlPage('App installed, but connector setup failed — check server logs.'));
     return;
   }
 
-  res.status(200).send('<html><body>Telegram connector installed and activated.</body></html>');
+  res.status(200).send(htmlPage('Telegram connector installed and activated.'));
 }

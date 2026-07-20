@@ -29,7 +29,7 @@ function writeToDisk(tokens) {
  */
 function saveInstall(params) {
     const tokens = {
-        domain: params.domain,
+        serverEndpoint: params.serverEndpoint,
         memberId: params.memberId,
         accessToken: params.accessToken,
         refreshToken: params.refreshToken,
@@ -58,7 +58,10 @@ function loadTokens() {
     return cached;
 }
 async function refresh(tokens) {
-    const response = await axios_1.default.get(`https://${tokens.domain}/oauth/token/`, {
+    // The token endpoint lives on the same host as the REST server endpoint
+    // (e.g. https://oauth.bitrix24.tech/oauth/token/).
+    const oauthOrigin = new URL(tokens.serverEndpoint).origin;
+    const response = await axios_1.default.get(`${oauthOrigin}/oauth/token/`, {
         params: {
             grant_type: 'refresh_token',
             client_id: config_1.config.bitrixClientId,
@@ -69,7 +72,7 @@ async function refresh(tokens) {
     });
     const data = response.data;
     const refreshed = {
-        domain: data.domain ?? tokens.domain,
+        serverEndpoint: data.server_endpoint ?? tokens.serverEndpoint,
         memberId: data.member_id ?? tokens.memberId,
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
@@ -79,21 +82,21 @@ async function refresh(tokens) {
     writeToDisk(refreshed);
     return refreshed;
 }
-/** Returns a currently-valid access token + portal domain, refreshing if needed. */
+/** Returns a currently-valid access token + REST server endpoint, refreshing if needed. */
 async function getValidTokens() {
     let tokens = loadTokens();
     if (Date.now() >= tokens.expiresAt) {
         tokens = await refresh(tokens);
     }
-    return { domain: tokens.domain, accessToken: tokens.accessToken };
+    return { serverEndpoint: tokens.serverEndpoint, accessToken: tokens.accessToken };
 }
 /**
  * Calls a Bitrix24 REST method authenticated as the installed local application,
  * refreshing the access token and retrying once if Bitrix reports it as expired.
  */
 async function callBitrixMethod(method, params) {
-    const { domain, accessToken } = await getValidTokens();
-    const url = `https://${domain}/rest/${method}.json`;
+    const { serverEndpoint, accessToken } = await getValidTokens();
+    const url = `${serverEndpoint}${method}.json`;
     const post = (token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000 });
     let response = await post(accessToken);
     if (response.data?.error === 'expired_token') {
