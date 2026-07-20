@@ -1,7 +1,13 @@
 import type { Request, Response } from 'express';
 import { config } from '../config';
 import { saveInstall } from '../services/bitrixAuth';
-import { registerConnector, activateConnector, bindEvent, listOpenLines } from '../services/bitrixConnector';
+import {
+  registerConnector,
+  activateConnector,
+  setConnectorData,
+  bindEvent,
+  listOpenLines,
+} from '../services/bitrixConnector';
 
 // Standard Bitrix24 JS SDK snippet: closes the install slider/iframe cleanly.
 // Harmless if the request wasn't actually opened inside a Bitrix iframe.
@@ -76,6 +82,9 @@ export async function handleBitrixInstall(req: Request, res: Response): Promise<
 
     await activateConnector(config.bitrixLineId);
     console.log(`[bitrix] Connector activated on line ${config.bitrixLineId}`);
+
+    await setConnectorData(config.bitrixLineId);
+    console.log(`[bitrix] Connector data set on line ${config.bitrixLineId}`);
 
     const eventsUrl = `${config.webhookUrl}${config.bitrixEventsPath}`;
     await bindEvent('ONIMCONNECTORMESSAGEADD', eventsUrl);

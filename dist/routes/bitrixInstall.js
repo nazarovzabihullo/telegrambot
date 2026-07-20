@@ -54,6 +54,8 @@ async function handleBitrixInstall(req, res) {
         }
         await (0, bitrixConnector_1.activateConnector)(config_1.config.bitrixLineId);
         console.log(`[bitrix] Connector activated on line ${config_1.config.bitrixLineId}`);
+        await (0, bitrixConnector_1.setConnectorData)(config_1.config.bitrixLineId);
+        console.log(`[bitrix] Connector data set on line ${config_1.config.bitrixLineId}`);
         const eventsUrl = `${config_1.config.webhookUrl}${config_1.config.bitrixEventsPath}`;
         await (0, bitrixConnector_1.bindEvent)('ONIMCONNECTORMESSAGEADD', eventsUrl);
         await (0, bitrixConnector_1.bindEvent)('ONAPPUNINSTALL', eventsUrl);

@@ -4,6 +4,7 @@ exports.CONNECTOR_ID = void 0;
 exports.registerConnector = registerConnector;
 exports.listOpenLines = listOpenLines;
 exports.activateConnector = activateConnector;
+exports.setConnectorData = setConnectorData;
 exports.bindEvent = bindEvent;
 exports.chatIdFor = chatIdFor;
 exports.telegramIdFromChatId = telegramIdFromChatId;
@@ -43,6 +44,23 @@ async function activateConnector(lineId) {
         CONNECTOR: exports.CONNECTOR_ID,
         LINE: lineId,
         ACTIVE: 1,
+    });
+}
+/**
+ * Sets the channel data for our connector on the given line. Without this,
+ * imconnector.send.messages reports SUCCESS but the message never actually
+ * surfaces in the operator's Open Lines UI — this call is what tells Bitrix
+ * "here is the channel messages will arrive on for this line". Must be
+ * called once per line activation, with a stable DATA.ID per docs guidance.
+ */
+async function setConnectorData(lineId) {
+    await (0, bitrixAuth_1.callBitrixMethod)('imconnector.connector.data.set', {
+        CONNECTOR: exports.CONNECTOR_ID,
+        LINE: lineId,
+        DATA: {
+            ID: `${exports.CONNECTOR_ID}_line${lineId}`,
+            NAME: 'Telegram bot',
+        },
     });
 }
 /**
@@ -99,7 +117,7 @@ async function sendMessageToBitrix(lineId, sender, text, messageId) {
                     last_name: sender.lastName ?? '',
                 },
                 message: {
-                    id: messageId,
+                    id: String(messageId),
                     date: Math.floor(Date.now() / 1000),
                     text,
                 },

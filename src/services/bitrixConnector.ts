@@ -50,6 +50,24 @@ export async function activateConnector(lineId: number): Promise<void> {
 }
 
 /**
+ * Sets the channel data for our connector on the given line. Without this,
+ * imconnector.send.messages reports SUCCESS but the message never actually
+ * surfaces in the operator's Open Lines UI — this call is what tells Bitrix
+ * "here is the channel messages will arrive on for this line". Must be
+ * called once per line activation, with a stable DATA.ID per docs guidance.
+ */
+export async function setConnectorData(lineId: number): Promise<void> {
+  await callBitrixMethod('imconnector.connector.data.set', {
+    CONNECTOR: CONNECTOR_ID,
+    LINE: lineId,
+    DATA: {
+      ID: `${CONNECTOR_ID}_line${lineId}`,
+      NAME: 'Telegram bot',
+    },
+  });
+}
+
+/**
  * Binds a Bitrix event to our HTTP handler. Unlike register/activate, Bitrix
  * does NOT treat re-binding the same event+handler pair as a no-op — it
  * rejects it with "Handler already binded", which in practice just confirms
@@ -111,7 +129,7 @@ export async function sendMessageToBitrix(
           last_name: sender.lastName ?? '',
         },
         message: {
-          id: messageId,
+          id: String(messageId),
           date: Math.floor(Date.now() / 1000),
           text,
         },
