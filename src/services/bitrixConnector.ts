@@ -37,7 +37,14 @@ export async function registerConnector(): Promise<void> {
 
 /** Lists the portal's Open Lines (id + name) — handy for finding the right BITRIX_LINE_ID. */
 export async function listOpenLines(): Promise<Array<{ ID: string; LINE_NAME: string }>> {
-  return callBitrixMethod('imopenlines.config.list', {});
+  return callBitrixMethod('imopenlines.config.list.get', {
+    PARAMS: {
+      select: ['ID', 'LINE_NAME', 'ACTIVE'],
+      order: { ID: 'ASC' },
+      limit: 50,
+      offset: 0,
+    },
+  });
 }
 
 /** Attaches our connector to the given Open Line. Idempotent. */

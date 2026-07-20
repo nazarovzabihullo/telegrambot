@@ -36,7 +36,14 @@ async function registerConnector() {
 }
 /** Lists the portal's Open Lines (id + name) — handy for finding the right BITRIX_LINE_ID. */
 async function listOpenLines() {
-    return (0, bitrixAuth_1.callBitrixMethod)('imopenlines.config.list', {});
+    return (0, bitrixAuth_1.callBitrixMethod)('imopenlines.config.list.get', {
+        PARAMS: {
+            select: ['ID', 'LINE_NAME', 'ACTIVE'],
+            order: { ID: 'ASC' },
+            limit: 50,
+            offset: 0,
+        },
+    });
 }
 /** Attaches our connector to the given Open Line. Idempotent. */
 async function activateConnector(lineId) {
