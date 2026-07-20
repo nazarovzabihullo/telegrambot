@@ -8,6 +8,7 @@ exports.bindEvent = bindEvent;
 exports.chatIdFor = chatIdFor;
 exports.telegramIdFromChatId = telegramIdFromChatId;
 exports.sendMessageToBitrix = sendMessageToBitrix;
+const config_1 = require("../config");
 const bitrixAuth_1 = require("./bitrixAuth");
 /** Unique id for our custom Open Channels connector within the portal. */
 exports.CONNECTOR_ID = 'telegram_location_bot';
@@ -26,6 +27,10 @@ async function registerConnector() {
             DATA_IMAGE: PLACEHOLDER_ICON_BASE64,
             DATA_IMAGE_ECONOM: PLACEHOLDER_ICON_BASE64,
         },
+        // Bitrix requires a placement handler URL even though our connector has
+        // no real settings UI — everything is configured automatically at
+        // install time. The page just needs to exist and return 200.
+        PLACEMENT_HANDLER: `${config_1.config.webhookUrl}${config_1.config.bitrixPlacementPath}`,
     });
 }
 /** Lists the portal's Open Lines (id + name) — handy for finding the right BITRIX_LINE_ID. */

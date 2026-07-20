@@ -28,6 +28,7 @@ export interface AppConfig {
   bitrixPortalDomain: string;
   bitrixInstallPath: string;
   bitrixEventsPath: string;
+  bitrixPlacementPath: string;
   tokenStorePath: string;
 }
 
@@ -95,6 +96,7 @@ function buildConfig(): AppConfig {
     bitrixPortalDomain: requireEnv('BITRIX_PORTAL_DOMAIN'),
     bitrixInstallPath: '/bitrix/install',
     bitrixEventsPath: '/bitrix/events',
+    bitrixPlacementPath: '/bitrix/placement',
     tokenStorePath: path.join(process.cwd(), 'data', 'bitrix-tokens.json'),
   };
 }

@@ -66,6 +66,7 @@ function buildConfig() {
         bitrixPortalDomain: requireEnv('BITRIX_PORTAL_DOMAIN'),
         bitrixInstallPath: '/bitrix/install',
         bitrixEventsPath: '/bitrix/events',
+        bitrixPlacementPath: '/bitrix/placement',
         tokenStorePath: path_1.default.join(process.cwd(), 'data', 'bitrix-tokens.json'),
     };
 }

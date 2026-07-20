@@ -25,6 +25,15 @@ const bitrixBodyParsers = [express.json(), express.urlencoded({ extended: true }
 app.post(config.bitrixInstallPath, ...bitrixBodyParsers, handleBitrixInstall);
 app.post(config.bitrixEventsPath, ...bitrixBodyParsers, handleBitrixEvent);
 
+// Connector placement handler: Bitrix requires this URL to exist (it's
+// where a connector's settings UI would normally live), but our connector
+// is fully configured automatically at install time, so it's just a stub.
+const placementPage = (_req: Request, res: Response): void => {
+  res.status(200).send('<html><body>Telegram connector — no settings needed here.</body></html>');
+};
+app.get(config.bitrixPlacementPath, placementPage);
+app.post(config.bitrixPlacementPath, ...bitrixBodyParsers, placementPage);
+
 /**
  * Registers the Telegram webhook so that Telegram starts delivering
  * updates to our Express endpoint. Called once on startup.
