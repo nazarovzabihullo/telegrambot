@@ -174,5 +174,7 @@ export async function callBitrixMethod<T = unknown>(
     );
   }
 
+  console.log(`[bitrix] ${method} succeeded, response:`, JSON.stringify(response.data));
+
   return response.data.result as T;
 }

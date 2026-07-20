@@ -123,5 +123,6 @@ async function callBitrixMethod(method, params) {
     if (response.data?.error) {
         throw new Error(`[bitrix] ${method} failed (HTTP ${response.status}): ${response.data.error} - ${response.data.error_description ?? ''}`);
     }
+    console.log(`[bitrix] ${method} succeeded, response:`, JSON.stringify(response.data));
     return response.data.result;
 }
