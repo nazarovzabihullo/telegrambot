@@ -97,7 +97,12 @@ async function getValidTokens() {
 async function callBitrixMethod(method, params) {
     const { serverEndpoint, accessToken } = await getValidTokens();
     const url = `${serverEndpoint}${method}.json`;
-    const post = (token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000 });
+    // Bitrix returns error details as a JSON body even on non-2xx status codes
+    // (e.g. 404 for an unknown method, 401 for a bad token). Accepting any
+    // status here means response.data is always populated, so the error
+    // handling below can surface Bitrix's actual error code/description
+    // instead of axios's generic "Request failed with status code N".
+    const post = (token) => axios_1.default.post(url, { ...params, auth: token }, { timeout: 10000, validateStatus: () => true });
     let response = await post(accessToken);
     if (response.data?.error === 'expired_token') {
         const tokens = loadTokens();
@@ -105,7 +110,7 @@ async function callBitrixMethod(method, params) {
         response = await post(refreshed.accessToken);
     }
     if (response.data?.error) {
-        throw new Error(`[bitrix] ${method} failed: ${response.data.error} - ${response.data.error_description ?? ''}`);
+        throw new Error(`[bitrix] ${method} failed (HTTP ${response.status}): ${response.data.error} - ${response.data.error_description ?? ''}`);
     }
     return response.data.result;
 }

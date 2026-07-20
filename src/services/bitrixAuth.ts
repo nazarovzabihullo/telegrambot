@@ -134,8 +134,17 @@ export async function callBitrixMethod<T = unknown>(
   const { serverEndpoint, accessToken } = await getValidTokens();
   const url = `${serverEndpoint}${method}.json`;
 
+  // Bitrix returns error details as a JSON body even on non-2xx status codes
+  // (e.g. 404 for an unknown method, 401 for a bad token). Accepting any
+  // status here means response.data is always populated, so the error
+  // handling below can surface Bitrix's actual error code/description
+  // instead of axios's generic "Request failed with status code N".
   const post = (token: string) =>
-    axios.post(url, { ...params, auth: token }, { timeout: 10_000 });
+    axios.post(
+      url,
+      { ...params, auth: token },
+      { timeout: 10_000, validateStatus: () => true }
+    );
 
   let response = await post(accessToken);
 
@@ -147,7 +156,7 @@ export async function callBitrixMethod<T = unknown>(
 
   if (response.data?.error) {
     throw new Error(
-      `[bitrix] ${method} failed: ${response.data.error} - ${response.data.error_description ?? ''}`
+      `[bitrix] ${method} failed (HTTP ${response.status}): ${response.data.error} - ${response.data.error_description ?? ''}`
     );
   }
 
