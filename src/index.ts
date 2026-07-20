@@ -17,11 +17,13 @@ app.get('/', (_req: Request, res: Response) => {
 app.use(bot.webhookCallback(config.webhookPath));
 
 // Bitrix24 local-application install handshake and Open Lines connector
-// events. Each gets its own scoped urlencoded parser instead of a global
-// one, so it never interferes with Telegraf's raw-body webhook above.
-const bitrixBodyParser = express.urlencoded({ extended: true });
-app.post(config.bitrixInstallPath, bitrixBodyParser, handleBitrixInstall);
-app.post(config.bitrixEventsPath, bitrixBodyParser, handleBitrixEvent);
+// events. Bitrix has been observed sending either urlencoded or JSON
+// bodies depending on portal/version, so both parsers are chained: each
+// only acts when the request's Content-Type matches, so they never
+// conflict with each other or with Telegraf's raw-body webhook above.
+const bitrixBodyParsers = [express.json(), express.urlencoded({ extended: true })];
+app.post(config.bitrixInstallPath, ...bitrixBodyParsers, handleBitrixInstall);
+app.post(config.bitrixEventsPath, ...bitrixBodyParsers, handleBitrixEvent);
 
 /**
  * Registers the Telegram webhook so that Telegram starts delivering

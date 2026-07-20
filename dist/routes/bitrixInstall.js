@@ -13,7 +13,7 @@ const bitrixConnector_1 = require("../services/bitrixConnector");
 async function handleBitrixInstall(req, res) {
     const { DOMAIN, AUTH_ID, AUTH_EXPIRES, REFRESH_ID, member_id: memberId } = req.body;
     if (!DOMAIN || !AUTH_ID || !AUTH_EXPIRES || !REFRESH_ID || !memberId) {
-        console.error('[bitrix] Install handler received an incomplete payload:', req.body);
+        console.error('[bitrix] Install handler received an incomplete payload. Content-Type:', req.headers['content-type'], 'Body:', JSON.stringify(req.body));
         res.status(400).send('Missing required install parameters.');
         return;
     }
