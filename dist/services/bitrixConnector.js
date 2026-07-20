@@ -45,12 +45,30 @@ async function activateConnector(lineId) {
         ACTIVE: 1,
     });
 }
-/** Binds a Bitrix event to our HTTP handler. Re-binding the same pair is a no-op on Bitrix's side. */
+/**
+ * Binds a Bitrix event to our HTTP handler. Unlike register/activate, Bitrix
+ * does NOT treat re-binding the same event+handler pair as a no-op — it
+ * rejects it with "Handler already binded", which in practice just confirms
+ * the binding from an earlier install is still in place. Since our local
+ * token file can be wiped by a redeploy while Bitrix's own event-handler
+ * table survives, that specific error is expected on re-install and treated
+ * as success rather than a failure.
+ */
 async function bindEvent(eventName, handlerUrl) {
-    await (0, bitrixAuth_1.callBitrixMethod)('event.bind', {
-        EVENT: eventName,
-        HANDLER: handlerUrl,
-    });
+    try {
+        await (0, bitrixAuth_1.callBitrixMethod)('event.bind', {
+            EVENT: eventName,
+            HANDLER: handlerUrl,
+        });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes('already binded')) {
+            console.log(`[bitrix] ${eventName} was already bound, treating as success`);
+            return;
+        }
+        throw error;
+    }
 }
 /** The chat id we hand to Bitrix for a given Telegram user — reversible by stripping the prefix. */
 function chatIdFor(telegramId) {
