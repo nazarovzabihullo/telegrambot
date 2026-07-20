@@ -60,11 +60,19 @@ export async function handleBitrixInstall(req: Request, res: Response): Promise<
     await registerConnector();
     console.log('[bitrix] Connector registered');
 
-    const lines = await listOpenLines();
-    console.log(
-      '[bitrix] Open Lines in this portal:',
-      JSON.stringify(lines.map((l) => ({ ID: l.ID, NAME: l.LINE_NAME })))
-    );
+    // Best-effort diagnostic only — never let it block activation below.
+    try {
+      const lines = await listOpenLines();
+      console.log(
+        '[bitrix] Open Lines in this portal:',
+        JSON.stringify(lines.map((l) => ({ ID: l.ID, NAME: l.LINE_NAME })))
+      );
+    } catch (listError) {
+      console.warn(
+        '[bitrix] Could not list Open Lines (non-fatal):',
+        listError instanceof Error ? listError.message : listError
+      );
+    }
 
     await activateConnector(config.bitrixLineId);
     console.log(`[bitrix] Connector activated on line ${config.bitrixLineId}`);
